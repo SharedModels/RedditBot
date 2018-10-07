@@ -1,6 +1,7 @@
 import praw
 from multiprocessing.dummy import Pool as ThreadPool
 import time
+import pandas as pd
 
 
 class SubredditRelations():
@@ -81,14 +82,14 @@ class SubredditRelations():
         self.pool.map(self.user_comments, self.global_user_list)
         for subreddit in subreddit_list:
             self.combine_user_counts(subreddit)
-        combined_relations = pd.concat(self.relations_df_list, axis = 1)
+        combined_relations = pd.concat(self.relations_df_list, axis=1)
         combined_relations.columns = subreddit_list
         return combined_relations
 
-            # print(self.global_user_counts)
-            # self.retrieve_relations_thread(subreddit)
-            # pd.DataFrame(self.relations_dict).fillna(0).to_csv('top_100_relations.csv')
-            # return self.relations_dict
+        # print(self.global_user_counts)
+        # self.retrieve_relations_thread(subreddit)
+        # pd.DataFrame(self.relations_dict).fillna(0).to_csv('top_100_relations.csv')
+        # return self.relations_dict
 
     def top_100_subreddits(self, number=1000):
         subreddit = self.reddit.subreddit('all')
@@ -115,7 +116,7 @@ if __name__ == '__main__':
 
     print(datetime.datetime.now())
     relations = SubredditRelations()
-    subreddit_list = relations.top_100_subreddits(40)
+    subreddit_list = relations.top_100_subreddits(50)
     print(subreddit_list)
     relations_dict = relations.find_relations(subreddit_list)
     print(datetime.datetime.now())
