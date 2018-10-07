@@ -22,6 +22,7 @@ class SubredditRelations():
         self.global_user_list = []
         self.global_user_counts = {}
         self.relations_df_list = []
+        self.comment_upvote = []
 
     def retrieve_submission_comments(self, submission):
         self.subreddit_list.append(submission.comments.list())
@@ -35,15 +36,20 @@ class SubredditRelations():
 
     def retrieve_users(self, subred):
         user_list = []
+        upvote_comment_dict = {}
         for comment_list in self.comments_dict[subred]:
             for comment in comment_list:
                 try:
                     user_list.append(comment.author.name)
+                    upvote_comment_dict['commenet'] = comment.body
+                    upvote_comment_dict['upvote'] = comment.score
+                    # TODO comments and upvotes
                 except Exception as e:
                     # print(e)
                     continue
         user_list = list(set(user_list))
         self.user_dict[subred] = user_list
+        self.comment_upvote[subred] = upvote_comment_dict
 
     def user_comments(self, user):
         current_user = {}
