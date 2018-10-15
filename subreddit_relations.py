@@ -33,6 +33,7 @@ class SubredditRelations():
         hot_posts = subreddit.hot(limit=self.subreddit_post_limit)
         self.pool.map(self.retrieve_submission_comments, hot_posts)
         self.comments_dict[subred] = self.subreddit_list
+        return self.subreddit_list
 
     def retrieve_users(self, subred):
         user_list = []
