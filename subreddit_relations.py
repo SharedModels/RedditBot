@@ -22,7 +22,7 @@ class SubredditRelations():
         self.global_user_list = []
         self.global_user_counts = {}
         self.relations_df_list = []
-        self.comment_upvote = []
+        self.comment_upvote = {}
 
     def retrieve_submission_comments(self, submission):
         self.subreddit_list.append(submission.comments.list())
@@ -33,23 +33,27 @@ class SubredditRelations():
         hot_posts = subreddit.hot(limit=self.subreddit_post_limit)
         self.pool.map(self.retrieve_submission_comments, hot_posts)
         self.comments_dict[subred] = self.subreddit_list
+        return self.subreddit_list
 
     def retrieve_users(self, subred):
         user_list = []
-        upvote_comment_dict = {}
+        upvote_comment_block = []
         for comment_list in self.comments_dict[subred]:
             for comment in comment_list:
+                individual_upvote_comment_dict = {}
                 try:
                     user_list.append(comment.author.name)
-                    upvote_comment_dict['commenet'] = comment.body
-                    upvote_comment_dict['upvote'] = comment.score
+                    individual_upvote_comment_dict['comment'] = comment.body
+                    individual_upvote_comment_dict['upvote'] = comment.score
+                    individual_upvote_comment_dict['subreddit'] = subred
+                    upvote_comment_block.append(individual_upvote_comment_dict)
                     # TODO comments and upvotes
                 except Exception as e:
                     # print(e)
                     continue
         user_list = list(set(user_list))
         self.user_dict[subred] = user_list
-        self.comment_upvote[subred] = upvote_comment_dict
+        self.comment_upvote[subred] = upvote_comment_block
 
     def user_comments(self, user):
         current_user = {}
