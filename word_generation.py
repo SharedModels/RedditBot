@@ -4,7 +4,7 @@ from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from comment_reply import CommentReply
 import pickle
 
@@ -28,9 +28,9 @@ class ReplyPredictions:
         model.add(Conv1D(128, kernel_size=5, activation='relu', padding='same'))
         model.add(MaxPool1D())
         model.add(Conv1D(128, kernel_size=3, activation='relu', padding='same'))
-        model.add(MaxPool1D())
-        # model.add(Conv1D(40, kernel_size=1, activation='relu'))
         # model.add(MaxPool1D())
+        # model.add(Conv1D(128, kernel_size=3, activation='relu'))
+        model.add(MaxPool1D())
         model.add(Dense(128, activation='relu'))
         model.add(Flatten())
         model.add(Dense(self.output_size, activation='softmax'))
@@ -38,10 +38,11 @@ class ReplyPredictions:
         return model
 
     @staticmethod
-    def process_data(subreddit, post_limit=1000, text_length=100):
-        df = CommentReply(post_limit).collect_comment_reply(subreddit)
+    def process_data(subreddit, post_limit=1000, text_length=50):
+        df = CommentReply(post_limit).collect_comment_reply_sentence_break(subreddit)
         df['text_length'] = df['body'].str.len()
         df = df[df['text_length'] < text_length]
+        # print(len(df))
         return df
 
     @staticmethod
@@ -54,10 +55,10 @@ class ReplyPredictions:
     def tokenize_data(self, df, train=True):
         if train:
             self.tokenizer = Tokenizer()
-            self.tokenizer.fit_on_texts(df['parent_comment'])
+            self.tokenizer.fit_on_texts(df['body_parent'])
             self.vocab_size = len(self.tokenizer.word_index) + 1
 
-        sequences = self.tokenizer.texts_to_sequences(df['parent_comment'])
+        sequences = self.tokenizer.texts_to_sequences(df['body_parent'])
         if train:
             self.max_length = self.find_max_length(sequences)
         sequences = pad_sequences(sequences, self.max_length, padding='post')
@@ -66,7 +67,7 @@ class ReplyPredictions:
             self.seq_length = sequences.shape[1]
         return sequences
 
-    def process_y(self, df, vec=CountVectorizer(min_df=50, stop_words='english')):
+    def process_y(self, df, vec=TfidfVectorizer(min_df=10, stop_words='english')):
         self.vec = vec
         y = df['body']
         y = vec.fit_transform(y)
@@ -130,13 +131,13 @@ class ReplyPredictions:
         test = self.tokenize_data(text_df, train=False)
         predictions = self.model.predict(test)
         predicted_words = self.handle_predictions(predictions, num_words)
-        return pd.DataFrame({'parent_comment': text_df['parent_comment'].tolist(), 'reply': predicted_words})
+        return pd.DataFrame({'body_parent': text_df['body_parent'].tolist(), 'reply': predicted_words})
 
 
 if __name__ == '__main__':
     obj = ReplyPredictions()
-    obj.build_transform_save(['askreddit', 'pics', 'funny', 'gaming', 'worldnews', 'movies', 'news', 'todayilearned'],
-                             epochs=5)
-    test_df = pd.DataFrame({'parent_comment': ['me too thanks', 'i love reddit']})
-    test_df = CommentReply(subreddit_post_limit=5).collect_comment_reply('gaming').drop_duplicates('parent_comment')
+    obj.build_transform_save(['askreddit', 'news', 'worldnews', 'science', 'personalfinance'],
+                             epochs=3)
+    # test_df = pd.DataFrame({'body_parent': ['me too thanks', 'i love reddit']})
+    test_df = CommentReply(subreddit_post_limit=5).collect_comment_reply('gaming').drop_duplicates('body_parent')
     obj.predict_words(test_df, num_words=20).to_csv('test_pred.csv')
